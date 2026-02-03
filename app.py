@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 import plotly.express as px
+import matplotlib.pyplot as plt
+import numpy as np
 
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
@@ -45,7 +47,7 @@ if uploaded_file:
     total_sessions = len(daily_df)
     total_energy = round(pd.to_numeric(daily_df["Usage (kWh)"], errors="coerce").sum(), 2)
 
-    # ================= DRIVER DATA (TOP 8 + OTHERS) =================
+    # ================= DRIVER DATA =================
     driver_usage = (
         daily_df.groupby("Driver Name", as_index=False)["Usage (kWh)"]
         .sum()
@@ -53,15 +55,15 @@ if uploaded_file:
     )
 
     top_drivers = driver_usage.head(8)
-    other_drivers = driver_usage.iloc[8:]["Usage (kWh)"].sum()
+    other_val = driver_usage.iloc[8:]["Usage (kWh)"].sum()
 
-    if other_drivers > 0:
+    if other_val > 0:
         top_drivers = pd.concat([
             top_drivers,
-            pd.DataFrame([{"Driver Name": "Others", "Usage (kWh)": other_drivers}])
+            pd.DataFrame([{"Driver Name": "Others", "Usage (kWh)": other_val}])
         ])
 
-    # ================= HUB DATA (TOP 6 + OTHERS) =================
+    # ================= HUB DATA =================
     hub_usage = (
         daily_df.groupby("Hub Name", as_index=False)["Usage (kWh)"]
         .sum()
@@ -77,50 +79,24 @@ if uploaded_file:
             pd.DataFrame([{"Hub Name": "Others", "Usage (kWh)": other_hubs}])
         ])
 
-    # ================= DRIVER BAR CHART (ONLY VALUE FORMAT CHANGED) =================
+    # ================= DASHBOARD (BROWSER – Plotly) =================
     fig_driver = px.bar(
         top_drivers,
         x="Usage (kWh)",
         y="Driver Name",
         orientation="h",
-        text=top_drivers["Usage (kWh)"].round(2),  # ✅ ONLY CHANGE
+        text=top_drivers["Usage (kWh)"].round(2),
         title="Driver-wise Energy Usage (kWh)",
         color_discrete_sequence=["#2563eb"]
     )
-
     fig_driver.update_traces(textposition="outside")
-    fig_driver.update_layout(
-        height=520,
-        font=dict(size=14),
-        title_font_size=18,
-        margin=dict(l=180, r=40, t=60, b=40)
-    )
+    fig_driver.update_layout(margin=dict(l=160, r=60))
 
-    # ================= HUB DONUT CHART =================
     fig_hub = px.pie(
         top_hubs,
         names="Hub Name",
         values="Usage (kWh)",
-        hole=0.5,
-        title="Hub-wise Energy Distribution",
-        color_discrete_sequence=px.colors.qualitative.Set2
-    )
-    fig_hub.update_traces(
-        textinfo="percent+label",
-        textposition="inside",
-        insidetextfont=dict(size=16)
-    )
-    fig_hub.update_layout(
-        height=520,
-        font=dict(size=14),
-        title_font_size=18,
-        legend=dict(
-            orientation="h",
-            y=-0.2,
-            x=0.5,
-            xanchor="center"
-        ),
-        margin=dict(t=70, b=60)
+        title="Hub-wise Energy Distribution"
     )
 
     st.plotly_chart(fig_driver, use_container_width=True)
@@ -143,9 +119,10 @@ if uploaded_file:
 
         title_style = ParagraphStyle(
             name="HeaderTitle",
-            fontSize=18,
+            fontSize=16,
             textColor=colors.white,
-            alignment=1
+            alignment=1,
+            leading=18
         )
 
         elements = []
@@ -154,14 +131,14 @@ if uploaded_file:
         header = Table(
             [[Paragraph("FC Daily Charging Report", title_style)]],
             colWidths=[450],
-            rowHeights=[40]
+            rowHeights=[45]
         )
         header.setStyle(TableStyle([
             ("BACKGROUND", (0,0), (-1,-1), colors.HexColor("#1f4e79")),
             ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
         ]))
         elements.append(header)
-        elements.append(Spacer(1, 8))
+        elements.append(Spacer(1, 10))
 
         # ---------- KPI ----------
         kpi = Table(
@@ -173,42 +150,65 @@ if uploaded_file:
             colWidths=[150, 150, 150]
         )
         kpi.setStyle(TableStyle([
-            ("BACKGROUND", (0,0), (-1,-1), colors.whitesmoke),
-            ("FONT", (0,0), (-1,-1), "Helvetica-Bold"),
-            ("ALIGN", (0,0), (-1,-1), "CENTER"),
-            ("BOX", (0,0), (-1,-1), 0.6, colors.grey),
-            ("FONTSIZE", (0,0), (-1,-1), 10),
+            ("BACKGROUND",(0,0),(-1,-1),colors.whitesmoke),
+            ("ALIGN",(0,0),(-1,-1),"CENTER"),
+            ("FONT",(0,0),(-1,-1),"Helvetica-Bold"),
         ]))
         elements.append(kpi)
-        elements.append(Spacer(1, 16))
+        elements.append(Spacer(1, 18))
 
-        # ---------- DASHBOARD ----------
-        fig_driver.write_image("driver.png", width=1000, height=520, scale=2)
-        fig_hub.write_image("hub.png", width=1000, height=520, scale=2)
+        # ================= DRIVER BAR (PDF) =================
+        plt.figure(figsize=(10, 5.5))
+        bars = plt.barh(
+            top_drivers["Driver Name"],
+            top_drivers["Usage (kWh)"],
+            color="#2563eb"
+        )
 
-        elements.append(Image("driver.png", width=500, height=260))
-        elements.append(Spacer(1, 12))
-        elements.append(Image("hub.png", width=500, height=260))
+        max_val = top_drivers["Usage (kWh)"].max()
+        plt.xlim(0, max_val * 1.25)
+
+        for bar in bars:
+            w = bar.get_width()
+            plt.text(
+                w + max_val * 0.02,
+                bar.get_y() + bar.get_height()/2,
+                f"{w:.2f}",
+                va="center",
+                fontsize=10
+            )
+
+        plt.xlabel("Energy (kWh)")
+        plt.title("Driver-wise Energy Usage (kWh)")
+        plt.tight_layout()
+        plt.savefig("driver_pdf.png")
+        plt.close()
+
+        # ================= HUB PIE (PDF – FIXED) =================
+        plt.figure(figsize=(6.5, 5))
+        plt.pie(
+            top_hubs["Usage (kWh)"],
+            labels=top_hubs["Hub Name"],
+            autopct="%1.1f%%",
+            startangle=90,
+            pctdistance=0.75,
+            labeldistance=1.08,
+            textprops={"fontsize": 10}
+        )
+        plt.title("Hub-wise Energy Distribution", fontsize=13)
+        plt.tight_layout()
+        plt.savefig("hub_pdf.png")
+        plt.close()
+
+        elements.append(Image("driver_pdf.png", width=480, height=250))
+        elements.append(Spacer(1, 18))
+        elements.append(Image("hub_pdf.png", width=420, height=280))
 
         elements.append(PageBreak())
 
         # ---------- SESSION TABLE ----------
-        cell_style = ParagraphStyle(
-            name="Cell",
-            fontSize=7.2,
-            leading=9,
-            wordWrap="CJK"
-        )
-        header_cell_style = ParagraphStyle(
-            name="HeaderCell",
-            fontSize=8,
-            leading=10,
-            textColor=colors.white,
-            alignment=1
-        )
-
-        elements.append(Paragraph("Session Details", styles["Heading2"]))
-        elements.append(Spacer(1, 8))
+        cell_style = ParagraphStyle(name="Cell", fontSize=7.2, leading=9)
+        header_style = ParagraphStyle(name="HeaderCell", fontSize=8, textColor=colors.white)
 
         headers = [
             "Hub", "Session ID", "Driver", "VIN",
@@ -216,7 +216,7 @@ if uploaded_file:
             "SOC In", "End SOC", "Start", "End"
         ]
 
-        table_data = [[Paragraph(h, header_cell_style) for h in headers]]
+        table_data = [[Paragraph(h, header_style) for h in headers]]
 
         for _, r in daily_df.iterrows():
             table_data.append([
@@ -236,17 +236,11 @@ if uploaded_file:
         table = Table(
             table_data,
             repeatRows=1,
-            colWidths=[50, 50, 60, 85, 35, 45, 55, 45, 45, 60, 60]
+            colWidths=[50,50,60,85,35,45,55,45,45,60,60]
         )
-
         table.setStyle(TableStyle([
-            ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#1f4e79")),
-            ("GRID", (0,0), (-1,-1), 0.35, colors.grey),
-            ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
-            ("LEFTPADDING", (0,0), (-1,-1), 5),
-            ("RIGHTPADDING", (0,0), (-1,-1), 5),
-            ("TOPPADDING", (0,0), (-1,-1), 4),
-            ("BOTTOMPADDING", (0,0), (-1,-1), 4),
+            ("BACKGROUND",(0,0),(-1,0),colors.HexColor("#1f4e79")),
+            ("GRID",(0,0),(-1,-1),0.3,colors.grey),
         ]))
 
         elements.append(table)
