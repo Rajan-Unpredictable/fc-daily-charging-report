@@ -41,26 +41,27 @@ if uploaded_file:
         st.error("No data available for selected date.")
         st.stop()
 
-    daily_df["Driver Name"] = daily_df["Device ID"].astype(str)
+    # 🔁 RENAMED
+    daily_df["Charger ID"] = daily_df["Device ID"].astype(str)
 
     # ================= KPIs =================
     total_sessions = len(daily_df)
     total_energy = round(pd.to_numeric(daily_df["Usage (kWh)"], errors="coerce").sum(), 2)
 
-    # ================= DRIVER DATA =================
-    driver_usage = (
-        daily_df.groupby("Driver Name", as_index=False)["Usage (kWh)"]
+    # ================= DRIVER/CHARGER DATA =================
+    charger_usage = (
+        daily_df.groupby("Charger ID", as_index=False)["Usage (kWh)"]
         .sum()
         .sort_values("Usage (kWh)", ascending=False)
     )
 
-    top_drivers = driver_usage.head(8)
-    other_val = driver_usage.iloc[8:]["Usage (kWh)"].sum()
+    top_chargers = charger_usage.head(8)
+    other_val = charger_usage.iloc[8:]["Usage (kWh)"].sum()
 
     if other_val > 0:
-        top_drivers = pd.concat([
-            top_drivers,
-            pd.DataFrame([{"Driver Name": "Others", "Usage (kWh)": other_val}])
+        top_chargers = pd.concat([
+            top_chargers,
+            pd.DataFrame([{"Charger ID": "Others", "Usage (kWh)": other_val}])
         ])
 
     # ================= HUB DATA =================
@@ -79,14 +80,14 @@ if uploaded_file:
             pd.DataFrame([{"Hub Name": "Others", "Usage (kWh)": other_hubs}])
         ])
 
-    # ================= DASHBOARD (BROWSER – Plotly) =================
+    # ================= DASHBOARD (BROWSER) =================
     fig_driver = px.bar(
-        top_drivers,
+        top_chargers,
         x="Usage (kWh)",
-        y="Driver Name",
+        y="Charger ID",
         orientation="h",
-        text=top_drivers["Usage (kWh)"].round(2),
-        title="Driver-wise Energy Usage (kWh)",
+        text=top_chargers["Usage (kWh)"].round(2),
+        title="Charger ID-wise Energy Usage (kWh)",
         color_discrete_sequence=["#2563eb"]
     )
     fig_driver.update_traces(textposition="outside")
@@ -147,7 +148,7 @@ if uploaded_file:
                 f"Total Sessions: {total_sessions}",
                 f"Total Energy: {total_energy} kWh"
             ]],
-            colWidths=[150, 150, 150]
+            colWidths=[150,150,150]
         )
         kpi.setStyle(TableStyle([
             ("BACKGROUND",(0,0),(-1,-1),colors.whitesmoke),
@@ -157,35 +158,24 @@ if uploaded_file:
         elements.append(kpi)
         elements.append(Spacer(1, 18))
 
-        # ================= DRIVER BAR (PDF) =================
-        plt.figure(figsize=(10, 5.5))
-        bars = plt.barh(
-            top_drivers["Driver Name"],
-            top_drivers["Usage (kWh)"],
-            color="#2563eb"
-        )
-
-        max_val = top_drivers["Usage (kWh)"].max()
-        plt.xlim(0, max_val * 1.25)
+        # ---------- DRIVER BAR (PDF) ----------
+        plt.figure(figsize=(9,4.5))
+        bars = plt.barh(top_chargers["Charger ID"], top_chargers["Usage (kWh)"], color="#2563eb")
+        max_val = top_chargers["Usage (kWh)"].max()
+        plt.xlim(0, max_val*1.25)
 
         for bar in bars:
             w = bar.get_width()
-            plt.text(
-                w + max_val * 0.02,
-                bar.get_y() + bar.get_height()/2,
-                f"{w:.2f}",
-                va="center",
-                fontsize=10
-            )
+            plt.text(w + max_val*0.02, bar.get_y()+bar.get_height()/2, f"{w:.2f}", va="center", fontsize=10)
 
         plt.xlabel("Energy (kWh)")
-        plt.title("Driver-wise Energy Usage (kWh)")
+        plt.title("Charger ID-wise Energy Usage (kWh)")
         plt.tight_layout()
         plt.savefig("driver_pdf.png")
         plt.close()
 
-        # ================= HUB PIE (PDF – FIXED) =================
-        plt.figure(figsize=(6.5, 5))
+        # ---------- HUB PIE (PDF) ----------
+        plt.figure(figsize=(6.5,5))
         plt.pie(
             top_hubs["Usage (kWh)"],
             labels=top_hubs["Hub Name"],
@@ -193,7 +183,7 @@ if uploaded_file:
             startangle=90,
             pctdistance=0.75,
             labeldistance=1.08,
-            textprops={"fontsize": 10}
+            textprops={"fontsize":10}
         )
         plt.title("Hub-wise Energy Distribution", fontsize=13)
         plt.tight_layout()
@@ -201,7 +191,7 @@ if uploaded_file:
         plt.close()
 
         elements.append(Image("driver_pdf.png", width=480, height=250))
-        elements.append(Spacer(1, 18))
+        elements.append(Spacer(1,18))
         elements.append(Image("hub_pdf.png", width=420, height=280))
 
         elements.append(PageBreak())
@@ -211,9 +201,9 @@ if uploaded_file:
         header_style = ParagraphStyle(name="HeaderCell", fontSize=8, textColor=colors.white)
 
         headers = [
-            "Hub", "Session ID", "Driver", "VIN",
-            "kWh", "Duration", "Status",
-            "SOC In", "End SOC", "Start", "End"
+            "Hub","Session ID","Charger ID","VIN",
+            "kWh","Duration","Status",
+            "SOC In","End SOC","Start","End"
         ]
 
         table_data = [[Paragraph(h, header_style) for h in headers]]
@@ -222,7 +212,7 @@ if uploaded_file:
             table_data.append([
                 Paragraph(str(r.get("Hub Name","")), cell_style),
                 Paragraph(str(r.get("Session ID","")), cell_style),
-                Paragraph(str(r.get("Driver Name","")), cell_style),
+                Paragraph(str(r.get("Charger ID","")), cell_style),
                 Paragraph(str(r.get("VIN NUMBER","")), cell_style),
                 Paragraph(str(r.get("Usage (kWh)","")), cell_style),
                 Paragraph(str(r.get("Duration","")), cell_style),
