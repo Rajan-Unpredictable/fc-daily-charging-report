@@ -20,7 +20,7 @@ st.set_page_config(page_title="FC Daily Charging Report", layout="centered")
 st.title("⚡ FC Daily Charging Report Generator")
 
 uploaded_file = st.file_uploader(
-    "Upload Charging Session Excel / CSV",
+    "Upload Charging Session Excel / CSV"
     type=["csv", "xlsx"]
 )
 
@@ -218,7 +218,7 @@ if uploaded_file:
                 Paragraph(str(r.get("Duration","")), cell_style),
                 Paragraph(str(r.get("Status","")), cell_style),
                 Paragraph(str(r.get("SOC In (%)","")), cell_style),
-                Paragraph(str(r.get("SOC Out","")), cell_style),
+                Paragraph(str(r.get("SOC Out (%)","")), cell_style),
                 Paragraph(r["Start Time"].strftime("%d-%m %H:%M"), cell_style),
                 Paragraph(r["End Time"].strftime("%d-%m %H:%M"), cell_style),
             ])
