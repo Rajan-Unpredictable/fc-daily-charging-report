@@ -203,7 +203,7 @@ if uploaded_file:
         headers = [
             "Hub","Session ID","Charger ID","VIN",
             "kWh","Duration","Status",
-            "SOC In","End SOC","Start","End"
+            "SOC In","SOC Out","Start","End"
         ]
 
         table_data = [[Paragraph(h, header_style) for h in headers]]
@@ -218,7 +218,7 @@ if uploaded_file:
                 Paragraph(str(r.get("Duration","")), cell_style),
                 Paragraph(str(r.get("Status","")), cell_style),
                 Paragraph(str(r.get("SOC In (%)","")), cell_style),
-                Paragraph(str(r.get("End SOC","")), cell_style),
+                Paragraph(str(r.get("SOC Out","")), cell_style),
                 Paragraph(r["Start Time"].strftime("%d-%m %H:%M"), cell_style),
                 Paragraph(r["End Time"].strftime("%d-%m %H:%M"), cell_style),
             ])
