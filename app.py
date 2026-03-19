@@ -203,7 +203,7 @@ if uploaded_file:
         headers = [
             "Hub","Session ID","Charger ID","VIN",
             "kWh","Duration","Status",
-            "SOC In","SOC Out","Start","End"
+            "SOC In (%)","SOC Out (%)","Start","End"
         ]
 
         table_data = [[Paragraph(h, header_style) for h in headers]]
