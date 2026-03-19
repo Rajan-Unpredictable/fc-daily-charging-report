@@ -1,0 +1,38 @@
+=> Steps to prepare daily DCFC charging report.
+
+
+* To download the data...
+
+	- Go to "novo.matter.in" and login.
+	- Under Your Organizations Click "Matter Energy".
+	- Click "Continue to Dashboard". 
+	- Report & Analytics > Select Report Type "Chargers".
+	- Select Report > "Sessions".
+	- Filter by Hub > Select all Hub and Apply.
+	- Select Date range for charging report.
+	- Note: Click "Table field" and check or select the "Selected fields" as per this Sequence "Hub Name", "Device ID", "Session ID", "Driver Details", "Usage", 
+ 		"Start Time", "End Time", "Duration" , "Status", "Start SoC", "End SoC", "Vin Number". after sequence is ok then Click apply.
+	- Click "Generate Report".
+	
+
+* To the generate report....
+
+	- Open chrome browser then copy below link and Paste the below link in the address bar:
+
+       	https://fc-daily-charging-report-7nsjtuqy2sfk7fsvpp8cbd.streamlit.app/
+
+	- Click Browse File.
+	- Upload the downloaded Session Report Excel file.
+	- Click "Generate Final PDF".
+	- After processing, click Download PDF Report.
+
+Note: Check Dashboard sheet for verifying the charts area covering all data properly, if not proper then make chart size proper and change print area accordingly.
+	
+* To make pdf of report
+
+
+
+	
+	
+
+
