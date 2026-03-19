@@ -20,7 +20,7 @@ st.set_page_config(page_title="FC Daily Charging Report", layout="centered")
 st.title("⚡ FC Daily Charging Report Generator")
 
 uploaded_file = st.file_uploader(
-    "Upload Charging Session Excel / CSV"
+    "Upload Charging Session Excel / CSV",
     type=["csv", "xlsx"]
 )
 
